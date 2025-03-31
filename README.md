@@ -1,3 +1,11 @@
+---
+title: CV Parser
+emoji: 🐳
+colorFrom: purple
+colorTo: gray
+sdk: docker
+app_port: 7860
+---
 # CV Parser
 
 A FastAPI service that parses resumes and CVs from various document formats.
