@@ -261,40 +261,40 @@
             }
             
             // Updated function to only add copy button
-            function addCopyButton() {
-                const parent = resultsContainer.parentNode;
+            // function addCopyButton() {
+            //     const parent = resultsContainer.parentNode;
                 
                 // Add copy button
-                const copyBtn = document.createElement('button');
-                copyBtn.className = 'json-copy-btn';
-                copyBtn.textContent = 'Copy to Clipboard';
-                parent.appendChild(copyBtn);
+                // const copyBtn = document.createElement('button');
+                // copyBtn.className = 'json-copy-btn';
+                // copyBtn.textContent = 'Copy to Clipboard';
+                // parent.appendChild(copyBtn);
                 
                 // Add copied message element
-                const copiedMsg = document.createElement('span');
-                copiedMsg.className = 'copied-message';
-                copiedMsg.textContent = 'Copied!';
-                parent.appendChild(copiedMsg);
+                // const copiedMsg = document.createElement('span');
+                // copiedMsg.className = 'copied-message';
+                // copiedMsg.textContent = 'Copied!';
+                // parent.appendChild(copiedMsg);
                 
                 // Copy to clipboard functionality
-                copyBtn.addEventListener('click', () => {
-                    try {
-                        // Extract the raw JSON from the HTML
-                        const jsonText = JSON.stringify(
-                            JSON.parse(resultsContainer.textContent),
-                            null,
-                            2
-                        );
+                // copyBtn.addEventListener('click', () => {
+                //     try {
+                //         // Extract the raw JSON from the HTML
+                //         const jsonText = JSON.stringify(
+                //             JSON.parse(resultsContainer.textContent),
+                //             null,
+                //             2
+                //         );
                         
-                        navigator.clipboard.writeText(jsonText).then(() => {
-                            copiedMsg.classList.add('show');
-                            setTimeout(() => copiedMsg.classList.remove('show'), 2000);
-                        });
-                    } catch (err) {
-                        console.error('Failed to copy JSON:', err);
-                    }
-                });
-            }
+                //         navigator.clipboard.writeText(jsonText).then(() => {
+                //             copiedMsg.classList.add('show');
+                //             setTimeout(() => copiedMsg.classList.remove('show'), 2000);
+                //         });
+                //     } catch (err) {
+                //         console.error('Failed to copy JSON:', err);
+                //     }
+                // });
+            // }
         });
     </script>
 </body>
