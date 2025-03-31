@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Parser</title>
+    <script src=https://cdn.jsdelivr.net/npm/pretty-print-json@3.0/dist/pretty-print-json.min.js></script>
+    <link rel=stylesheet href=https://cdn.jsdelivr.net/npm/pretty-print-json@3.0/dist/css/pretty-print-json.css>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+        .upload-area:hover {
+            border-color: #aaa;
+        }
+        .upload-area.highlight {
+            border-color: #2196F3;
+            background-color: #f0f8ff;
+        }
+        .progress {
+            display: none;
+            margin-top: 10px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+
+        /* JSON formatting styles */
+        .json-container {
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            overflow: auto;
+            max-height: 600px;
+            border: 1px solid #e0e0e0;
+            position: relative;
+        }
+        
+        .json-key {
+            color: #0366d6;
+            font-weight: bold;
+        }
+        
+        .json-string {
+            color: #22863a;
+        }
+        
+        .json-number {
+            color: #005cc5;
+        }
+        
+        .json-boolean {
+            color: #d73a49;
+        }
+        
+        .json-null {
+            color: #6a737d;
+        }
+        
+        .collapsible,
+        .collapsible::before,
+        .collapsible.collapsed::before,
+        .json-toggle-all {
+            display: none; /* Hide these elements */
+        }
+        
+        .json-copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 3px 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .copied-message {
+            position: absolute;
+            top: 10px;
+            right: 55px; /* Updated position */
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 3px;
+            padding: 3px 8px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .copied-message.show {
+            opacity: 1;
+        }
+
+        .results-container {
+            position: relative;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>CV Parser</h1>
+    <div class="container">
+        <div class="upload-area" id="drop-area">
+            <p>Drag & drop your CV file here or click anywhere in this area to select</p>
+            <input type="file" id="fileInput" accept=".pdf,.docx,.jpg,.jpeg,.png" style="display: none;">
+            <p>Supported formats: PDF, DOCX, JPG, PNG</p>
+        </div>
+        <div id="fileName"></div>
+        <div class="progress" id="uploadProgress">Uploading...</div>
+        <div class="error" id="errorMessage"></div>
+        <button id="uploadBtn" style="display: none;">Upload</button>
+        
+        <h2>Results</h2>
+        <div class="results-container">
+            <pre id="results" class="json-container"></pre>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropArea = document.getElementById('drop-area');
+            const fileInput = document.getElementById('fileInput');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const fileNameDisplay = document.getElementById('fileName');
+            const progressIndicator = document.getElementById('uploadProgress');
+            const resultsContainer = document.getElementById('results');
+            const errorMessage = document.getElementById('errorMessage');
+
+            // Open file dialog when clicking the drop area
+            dropArea.addEventListener('click', () => fileInput.click());
+
+            // File selection handler
+            fileInput.addEventListener('change', handleFileSelection);
+
+            // Drag and drop handlers
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => {
+                    dropArea.classList.add('highlight');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => {
+                    dropArea.classList.remove('highlight');
+                }, false);
+            });
+
+            dropArea.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length) {
+                    fileInput.files = files;
+                    handleFileSelection();
+                }
+            }, false);
+
+            // Upload button event
+            uploadBtn.addEventListener('click', uploadFile);
+
+            function handleFileSelection() {
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    fileNameDisplay.textContent = `Selected file: ${file.name}`;
+                    uploadBtn.style.display = 'block';
+                    resultsContainer.style.display = 'none';
+                    errorMessage.textContent = '';
+                }
+            }
+
+            function uploadFile() {
+                if (!fileInput.files.length) return;
+
+                const file = fileInput.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+
+                // Show progress indicator
+                progressIndicator.style.display = 'block';
+                uploadBtn.disabled = true;
+                
+                fetch('/upload/', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.detail || 'Error uploading file');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Display results with enhanced formatting
+                    resultsContainer.innerHTML = '';
+                    resultsContainer.style.display = 'block';
+                    
+                    // Use the pretty-print-json library
+                    const jsonHtml = prettyPrintJson.toHtml(data, {
+                        indent: 4,
+                        lineNumbers: true,
+                        linkUrls: true,
+                        quoteKeys: true
+                    });
+                    
+                    resultsContainer.innerHTML = jsonHtml;
+                    
+                    // Add only copy button control
+                    addCopyButton();
+                    
+                    errorMessage.textContent = '';
+                })
+                .catch(error => {
+                    errorMessage.textContent = error.message;
+                    resultsContainer.style.display = 'none';
+                })
+                .finally(() => {
+                    progressIndicator.style.display = 'none';
+                    uploadBtn.disabled = false;
+                });
+            }
+            
+            // Updated function to only add copy button
+            function addCopyButton() {
+                const parent = resultsContainer.parentNode;
+                
+                // Add copy button
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'json-copy-btn';
+                copyBtn.textContent = 'Copy to Clipboard';
+                parent.appendChild(copyBtn);
+                
+                // Add copied message element
+                const copiedMsg = document.createElement('span');
+                copiedMsg.className = 'copied-message';
+                copiedMsg.textContent = 'Copied!';
+                parent.appendChild(copiedMsg);
+                
+                // Copy to clipboard functionality
+                copyBtn.addEventListener('click', () => {
+                    try {
+                        // Extract the raw JSON from the HTML
+                        const jsonText = JSON.stringify(
+                            JSON.parse(resultsContainer.textContent),
+                            null,
+                            2
+                        );
+                        
+                        navigator.clipboard.writeText(jsonText).then(() => {
+                            copiedMsg.classList.add('show');
+                            setTimeout(() => copiedMsg.classList.remove('show'), 2000);
+                        });
+                    } catch (err) {
+                        console.error('Failed to copy JSON:', err);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
